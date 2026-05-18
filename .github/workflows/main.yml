@@ -1,0 +1,51 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # lub master, w zależności od nazwy Twojej głównej gałęzi
+
+# Ustawienie uprawnień wymaganych do wdrożenia na GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Zapobiega nakładaniu się na siebie jednoczesnych wdrożeń
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kodu
+        uses: actions/checkout@v4
+
+      - name: Konfiguracja Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-size: 20 # rekomendowana wersja LTS
+          cache: 'npm'
+
+      - name: Instalacja zależności
+        run: npm ci # bezpieczniejszy odpowiednik 'npm install' w środowiskach CI/CD
+
+      - name: Budowanie projektu Vite
+        run: npm run build
+
+      - name: Konfiguracja środowiska GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Przesłanie zbudowanej aplikacji (folderu dist)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: Wdrożenie na GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
